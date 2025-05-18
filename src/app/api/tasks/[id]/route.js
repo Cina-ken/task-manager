@@ -9,9 +9,9 @@ export async function GET(request, { params }) {
 
   try {
     const task = await prisma.task.findUnique({
-      where: { id: parseInt(id), userId },
+      where: { id: parseInt(id) },
     });
-    if (!task) return new Response('Task not found', { status: 404 });
+    if (!task || task.userId !== userId) return new Response('Task not found', { status: 404 });
     return Response.json(task);
   } catch (error) {
     return new Response('Internal Server Error', { status: 500 });
@@ -26,14 +26,17 @@ export async function PUT(request, { params }) {
   try {
     const body = await request.json();
     const validatedData = taskSchema.parse(body);
-    const task = await prisma.task.update({
-      where: { id: parseInt(id), userId },
+    // Fetch task first to check ownership
+    const task = await prisma.task.findUnique({ where: { id: parseInt(id) } });
+    if (!task || task.userId !== userId) return new Response('Task not found', { status: 404 });
+    const updatedTask = await prisma.task.update({
+      where: { id: parseInt(id) },
       data: {
         ...validatedData,
         dueDate: validatedData.dueDate ? new Date(validatedData.dueDate) : null,
       },
     });
-    return Response.json(task);
+    return Response.json(updatedTask);
   } catch (error) {
     return new Response('Invalid input or task not found', { status: 400 });
   }
@@ -45,9 +48,9 @@ export async function DELETE(request, { params }) {
   if (!userId) return new Response('Unauthorized', { status: 401 });
 
   try {
-    await prisma.task.delete({
-      where: { id: parseInt(id), userId },
-    });
+    const task = await prisma.task.findUnique({ where: { id: parseInt(id) } });
+    if (!task || task.userId !== userId) return new Response('Task not found', { status: 404 });
+    await prisma.task.delete({ where: { id: parseInt(id) } });
     return new Response(null, { status: 204 });
   } catch (error) {
     return new Response('Task not found', { status: 404 });
