@@ -1,58 +1,88 @@
-import prisma from '@/lib/prisma';
-import { taskSchema } from '@/lib/validation';
+import { NextResponse } from 'next/server';
 import { getAuth } from '@clerk/nextjs/server';
+import prisma from '@/lib/prisma';
+import { z } from 'zod';
+
+// Validation schema for PUT requests
+const updateTaskSchema = z.object({
+  title: z.string().min(1, 'Title is required').optional(),
+  description: z.string().optional(),
+  dueDate: z.string().optional(),
+  priority: z.enum(['Low', 'Medium', 'High']).optional(),
+  status: z.enum(['To-Do', 'Done']).optional(),
+});
 
 export async function GET(request, { params }) {
-  const { id } = await params;
-  const { userId } = getAuth(request);
-  if (!userId) return new Response('Unauthorized', { status: 401 });
-
   try {
+    const { userId } = getAuth(request);
+    if (!userId) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
     const task = await prisma.task.findUnique({
-      where: { id: parseInt(id) },
+      where: {
+        id: parseInt(params.id),
+        userId,
+      },
     });
-    if (!task || task.userId !== userId) return new Response('Task not found', { status: 404 });
-    return Response.json(task);
+
+    if (!task) {
+      return NextResponse.json({ error: 'Task not found' }, { status: 404 });
+    }
+
+    return NextResponse.json(task);
   } catch (error) {
-    return new Response('Internal Server Error', { status: 500 });
+    console.error('GET /api/tasks/[id] error:', error);
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }
 
 export async function PUT(request, { params }) {
-  const { id } = await params;
-  const { userId } = getAuth(request);
-  if (!userId) return new Response('Unauthorized', { status: 401 });
-
   try {
+    const { userId } = getAuth(request);
+    if (!userId) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
     const body = await request.json();
-    const validatedData = taskSchema.parse(body);
-    // Fetch task first to check ownership
-    const task = await prisma.task.findUnique({ where: { id: parseInt(id) } });
-    if (!task || task.userId !== userId) return new Response('Task not found', { status: 404 });
-    const updatedTask = await prisma.task.update({
-      where: { id: parseInt(id) },
-      data: {
-        ...validatedData,
-        dueDate: validatedData.dueDate ? new Date(validatedData.dueDate) : null,
+    const parsedBody = updateTaskSchema.safeParse(body);
+
+    if (!parsedBody.success) {
+      return NextResponse.json({ error: parsedBody.error.errors }, { status: 400 });
+    }
+
+    const task = await prisma.task.update({
+      where: {
+        id: parseInt(params.id),
+        userId,
       },
+      data: parsedBody.data,
     });
-    return Response.json(updatedTask);
+
+    return NextResponse.json(task);
   } catch (error) {
-    return new Response('Invalid input or task not found', { status: 400 });
+    console.error('PUT /api/tasks/[id] error:', error);
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }
 
 export async function DELETE(request, { params }) {
-  const { id } = await params;
-  const { userId } = getAuth(request);
-  if (!userId) return new Response('Unauthorized', { status: 401 });
-
   try {
-    const task = await prisma.task.findUnique({ where: { id: parseInt(id) } });
-    if (!task || task.userId !== userId) return new Response('Task not found', { status: 404 });
-    await prisma.task.delete({ where: { id: parseInt(id) } });
-    return new Response(null, { status: 204 });
+    const { userId } = getAuth(request);
+    if (!userId) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
+    const task = await prisma.task.delete({
+      where: {
+        id: parseInt(params.id),
+        userId,
+      },
+    });
+
+    return NextResponse.json({ message: 'Task deleted', task });
   } catch (error) {
-    return new Response('Task not found', { status: 404 });
+    console.error('DELETE /api/tasks/[id] error:', error);
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }
