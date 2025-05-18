@@ -7,10 +7,19 @@ import { z } from 'zod';
 const updateTaskSchema = z.object({
   title: z.string().min(1, 'Title is required').optional(),
   description: z.string().optional(),
-  dueDate: z.string().optional(),
+  dueDate: z
+    .string()
+    .optional()
+    .transform((val) => (val ? new Date(val).toISOString() : undefined)),
   priority: z.enum(['Low', 'Medium', 'High']).optional(),
   status: z.enum(['To-Do', 'Done']).optional(),
-});
+}).refine(
+  (data) => !data.dueDate || !isNaN(new Date(data.dueDate).getTime()),
+  {
+    message: 'Invalid dueDate format. Expected ISO-8601 DateTime or valid date string.',
+    path: ['dueDate'],
+  }
+);
 
 export async function GET(request, { params }) {
   try {
@@ -19,9 +28,14 @@ export async function GET(request, { params }) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
+    const taskId = parseInt(params.id);
+    if (isNaN(taskId)) {
+      return NextResponse.json({ error: 'Invalid task ID' }, { status: 400 });
+    }
+
     const task = await prisma.task.findUnique({
       where: {
-        id: parseInt(params.id),
+        id: taskId,
         userId,
       },
     });
@@ -44,6 +58,11 @@ export async function PUT(request, { params }) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
+    const taskId = parseInt(params.id);
+    if (isNaN(taskId)) {
+      return NextResponse.json({ error: 'Invalid task ID' }, { status: 400 });
+    }
+
     const body = await request.json();
     const parsedBody = updateTaskSchema.safeParse(body);
 
@@ -53,7 +72,7 @@ export async function PUT(request, { params }) {
 
     const task = await prisma.task.update({
       where: {
-        id: parseInt(params.id),
+        id: taskId,
         userId,
       },
       data: parsedBody.data,
@@ -73,14 +92,19 @@ export async function DELETE(request, { params }) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const task = await prisma.task.delete({
+    const taskId = parseInt(params.id);
+    if (isNaN(taskId)) {
+      return NextResponse.json({ error: 'Invalid task ID' }, { status: 400 });
+    }
+
+    await prisma.task.delete({
       where: {
-        id: parseInt(params.id),
+        id: taskId,
         userId,
       },
     });
 
-    return NextResponse.json({ message: 'Task deleted', task });
+    return NextResponse.json({ message: 'Task deleted' });
   } catch (error) {
     console.error('DELETE /api/tasks/[id] error:', error);
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });

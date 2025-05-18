@@ -2,91 +2,95 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { format } from 'date-fns';
 
-export default function TaskForm({ task = {} }) {
-  const [formData, setFormData] = useState({
-    title: task.title || '',
-    description: task.description || '',
-    dueDate: task.dueDate ? format(new Date(task.dueDate), 'yyyy-MM-dd') : '',
-    priority: task.priority || 'Low',
-    status: task.status || 'To-Do',
-  });
-  const [error, setError] = useState('');
+export default function TaskForm({ task }) {
+  const [title, setTitle] = useState(task?.title || '');
+  const [description, setDescription] = useState(task?.description || '');
+  const [dueDate, setDueDate] = useState(
+    task?.dueDate ? new Date(task.dueDate).toISOString().split('T')[0] : ''
+  );
+  const [priority, setPriority] = useState(task?.priority || 'Low');
+  const [status, setStatus] = useState(task?.status || 'To-Do');
+  const [error, setError] = useState(null);
   const router = useRouter();
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    setError('');
+    setError(null);
+
+    const taskData = {
+      title,
+      description,
+      dueDate: dueDate || undefined,
+      priority,
+      status,
+    };
 
     try {
-      const method = task.id ? 'PUT' : 'POST';
-      const url = task.id ? `/api/tasks/${task.id}` : '/api/tasks';
+      const url = task ? `/api/tasks/${task.id}` : '/api/tasks';
+      const method = task ? 'PUT' : 'POST';
 
       const res = await fetch(url, {
         method,
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(formData),
+        body: JSON.stringify(taskData),
       });
 
-      if (!res.ok) throw new Error('Failed to save task');
+      if (!res.ok) {
+        const error = await res.json();
+        throw new Error(error.error || 'Failed to save task');
+      }
 
-      router.push('/dashboard');
       router.refresh();
+      if (!task) {
+        setTitle('');
+        setDescription('');
+        setDueDate('');
+        setPriority('Low');
+        setStatus('To-Do');
+      }
     } catch (err) {
       setError(err.message);
     }
   };
 
-  const handleChange = (e) => {
-    const { name, value } = e.target;
-    setFormData((prev) => ({ ...prev, [name]: value }));
-  };
-
   return (
-    <form onSubmit={handleSubmit} className="bg-white p-6 rounded-lg shadow-md max-w-md mx-auto">
+    <form onSubmit={handleSubmit} className="bg-white p-6 rounded-lg shadow-md">
+      <h2 className="text-2xl font-bold mb-4">{task ? 'Edit Task' : 'Add Task'}</h2>
       {error && <p className="text-red-500 mb-4">{error}</p>}
       <div className="mb-4">
-        <label htmlFor="title" className="block text-sm font-medium">Title</label>
+        <label className="block text-gray-700">Title</label>
         <input
           type="text"
-          id="title"
-          name="title"
-          value={formData.title}
-          onChange={handleChange}
+          value={title}
+          onChange={(e) => setTitle(e.target.value)}
+          className="w-full p-2 border rounded"
           required
-          className="mt-1 p-2 w-full border rounded-md"
         />
       </div>
       <div className="mb-4">
-        <label htmlFor="description" className="block text-sm font-medium">Description</label>
+        <label className="block text-gray-700">Description</label>
         <textarea
-          id="description"
-          name="description"
-          value={formData.description}
-          onChange={handleChange}
-          className="mt-1 p-2 w-full border rounded-md"
+          value={description}
+          onChange={(e) => setDescription(e.target.value)}
+          className="w-full p-2 border rounded"
         />
       </div>
       <div className="mb-4">
-        <label htmlFor="dueDate" className="block text-sm font-medium">Due Date</label>
+        <label className="block text-gray-700">Due Date</label>
         <input
           type="date"
-          id="dueDate"
-          name="dueDate"
-          value={formData.dueDate}
-          onChange={handleChange}
-          className="mt-1 p-2 w-full border rounded-md"
+          value={dueDate}
+          onChange={(e) => setDueDate(e.target.value)}
+          className="w-full p-2 border rounded"
         />
       </div>
       <div className="mb-4">
-        <label htmlFor="priority" className="block text-sm font-medium">Priority</label>
+        <label className="block text-gray-700">Priority</label>
         <select
-          id="priority"
-          name="priority"
-          value={formData.priority}
-          onChange={handleChange}
-          className="mt-1 p-2 w-full border rounded-md"
+          value={priority}
+          onChange={(e) => setPriority(e.target.value)}
+          className="w-full p-2 border rounded"
         >
           <option value="Low">Low</option>
           <option value="Medium">Medium</option>
@@ -94,20 +98,21 @@ export default function TaskForm({ task = {} }) {
         </select>
       </div>
       <div className="mb-4">
-        <label htmlFor="status" className="block text-sm font-medium">Status</label>
+        <label className="block text-gray-700">Status</label>
         <select
-          id="status"
-          name="status"
-          value={formData.status}
-          onChange={handleChange}
-          className="mt-1 p-2 w-full border rounded-md"
+          value={status}
+          onChange={(e) => setStatus(e.target.value)}
+          className="w-full p-2 border rounded"
         >
           <option value="To-Do">To-Do</option>
           <option value="Done">Done</option>
         </select>
       </div>
-      <button type="submit" className="bg-blue-600 text-white p-2 rounded-md w-full">
-        {task.id ? 'Update Task' : 'Add Task'}
+      <button
+        type="submit"
+        className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700"
+      >
+        {task ? 'Update Task' : 'Add Task'}
       </button>
     </form>
   );
