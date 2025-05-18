@@ -1,36 +1,99 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://github.com/vercel/next.js/tree/canary/packages/create-next-app).
+# 📝 Task Manager
 
-## Getting Started
+A full-featured, responsive task management web application built with **Next.js 15**, **Tailwind CSS**, **Prisma**, **PostgreSQL (Neon)**, and **Clerk Authentication**. This app allows users to create, read, update, delete, and filter tasks based on due dates and priorities.
 
-First, run the development server:
+---
+
+## 🚀 Features
+
+- 🔐 User Authentication (via Clerk)
+- 🧠 Task CRUD operations
+- 📅 Due date & priority management
+- 📊 Filter tasks by status, date, and priority
+- 💡 Responsive and modern UI with Tailwind CSS
+- 🌙 Dark mode support
+- 📦 REST API routes with Prisma + PostgreSQL
+- ⚙️ Clerk Middleware-protected dashboard routes
+- 🛠️ Fully responsive and mobile-friendly
+
+---
+
+## 🛠 Tech Stack
+
+- **Frontend**: Next.js 15 (App Router), Tailwind CSS
+- **Backend**: Prisma ORM, PostgreSQL (Neon)
+- **Auth**: Clerk.dev
+- **Deployment**: Vercel
+- **Styling**: Tailwind CSS
+- **Utilities**: date-fns, qrcode
+
+---
+
+## 📂 Folder Structure
 
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
-```
+├── src/
+│   ├── app/
+│   │   ├── layout.js
+│   │   ├── page.js
+│   │   ├── dashboard/
+│   │   └── api/
+│   ├── components/
+│   ├── lib/
+│   └── styles/
+│       └── globals.css
+├── prisma/
+│   └── schema.prisma
+├── .env.local
+├── middleware.js
+└── README.md
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Getting Started
+1. Clone the repository
+     git clone https://github.com/yourusername/task-manager.git
+     cd task-manager
 
-You can start editing the page by modifying `app/page.js`. The page auto-updates as you edit the file.
+2. Install dependencies
+    npm install
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+3. Set up environment variables
+    Create environmentvariable file in the root directory and add:
 
-## Learn More
+    DATABASE_URL=your_postgresql_neon_url
+    NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY=your_clerk_publishable_key
+    CLERK_SECRET_KEY=your_clerk_secret_key
+    NEXT_PUBLIC_CLERK_SIGN_IN_URL=/sign-in
+    NEXT_PUBLIC_CLERK_SIGN_UP_URL=/sign-up
 
-To learn more about Next.js, take a look at the following resources:
+    Ensure your .env* files are ignored in .gitignore for security.
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+4. Set up Prisma
+    npx prisma generate
+    npx prisma migrate dev --name init
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+5. Run the development server
+    npm run dev
+    Then visit: http://localhost:3000
 
-## Deploy on Vercel
+🚀 Deployment
+Deploy your project to Vercel for free.
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+Push code to GitHub.
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+Create a new project on Vercel and connect the repo.
+
+Set up the same .env.local variables in Vercel's Project Settings → Environment Variables.
+
+Choose Next.js as the framework.
+
+Deploy!
+
+ Production Setup (Clerk)
+To use Clerk in production:
+
+Go to your Clerk Dashboard.
+
+Add your production domain (e.g., https://taskmanager.vercel.app) to Production Instances.
+
+Use your production Clerk keys in Vercel's environment variables.
+     
