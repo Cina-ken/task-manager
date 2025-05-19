@@ -10,8 +10,8 @@ export default async function EditTask({ params }) {
     redirect('/sign-in');
   }
 
-  // Await params before using its properties (App Router dynamic routes)
-  const { id } = await params;
+  // Use params directly in page components (do NOT await)
+  const { id } = params;
   const taskId = Number(id);
   if (!Number.isFinite(taskId) || !Number.isInteger(taskId) || taskId <= 0) {
     return notFound();
