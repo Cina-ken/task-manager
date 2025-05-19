@@ -1,20 +1,34 @@
+import { auth } from '@clerk/nextjs/server';
 import prisma from '@/lib/prisma';
 import TaskForm from '@/components/TaskForm';
-import { currentUser } from '@clerk/nextjs/server';
+import { notFound, redirect } from 'next/navigation';
 
 export default async function EditTask({ params }) {
-  const user = await currentUser();
-  if (!user) return <p>Please sign in.</p>;
+  // Use currentUser() instead of auth() for server components
+  const { userId } = await auth();
+  if (!userId) {
+    redirect('/sign-in');
+  }
 
+  // Await params before using its properties (App Router dynamic routes)
+  const { id } = await params;
+  const taskId = Number(id);
+  if (!Number.isFinite(taskId) || !Number.isInteger(taskId) || taskId <= 0) {
+    return notFound();
+  }
+
+  // Only use id for unique lookup, then check userId for ownership
   const task = await prisma.task.findUnique({
-    where: { id: parseInt(params.id), userId: user.id },
+    where: { id: taskId },
   });
 
-  if (!task) return <p>Task not found.</p>;
+  if (!task || task.userId !== userId) {
+    return notFound();
+  }
 
   return (
-    <div>
-      <h1 className="text-3xl font-bold mb-6">Edit Task</h1>
+    <div className="container mx-auto p-4">
+      <h1 className="text-3xl font-bold mb-4">Edit Task</h1>
       <TaskForm task={task} />
     </div>
   );

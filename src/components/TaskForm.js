@@ -36,20 +36,27 @@ export default function TaskForm({ task }) {
         body: JSON.stringify(taskData),
       });
 
-      if (!res.ok) {
-        const error = await res.json();
-        throw new Error(error.error || 'Failed to save task');
+      let responseData;
+      try {
+        responseData = await res.json();
+      } catch {
+        responseData = { error: res.statusText || 'Invalid server response' };
       }
 
-      router.refresh();
-      if (!task) {
-        setTitle('');
-        setDescription('');
-        setDueDate('');
-        setPriority('Low');
-        setStatus('To-Do');
+      console.log('API response:', { status: res.status, data: responseData }); // Debug API response
+
+      if (!res.ok) {
+        const errorMessage =
+          typeof responseData.error === 'string'
+            ? responseData.error
+            : JSON.stringify(responseData.error) || `Failed to ${task ? 'update' : 'create'} task`;
+        throw new Error(errorMessage);
       }
+
+      router.push('/dashboard');
+      router.refresh();
     } catch (err) {
+      console.error('TaskForm error:', err);
       setError(err.message);
     }
   };

@@ -28,16 +28,14 @@ export async function GET(request, { params }) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const taskId = parseInt(params.id);
+    const id = await params.id;
+    const taskId = parseInt(id);
     if (isNaN(taskId)) {
       return NextResponse.json({ error: 'Invalid task ID' }, { status: 400 });
     }
 
     const task = await prisma.task.findUnique({
-      where: {
-        id: taskId,
-        userId,
-      },
+      where: { id: taskId, userId },
     });
 
     if (!task) {
@@ -47,18 +45,27 @@ export async function GET(request, { params }) {
     return NextResponse.json(task);
   } catch (error) {
     console.error('GET /api/tasks/[id] error:', error);
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+    return NextResponse.json(
+      { error: error.message || 'Internal server error' },
+      { status: 500 }
+    );
   }
 }
 
 export async function PUT(request, { params }) {
   try {
     const { userId } = getAuth(request);
+    console.log('PUT auth:', { userId }); // Debug auth
+
     if (!userId) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const taskId = parseInt(params.id);
+    // Await params before using its properties (App Router dynamic routes)
+    const { id } = await params;
+    const taskId = parseInt(id);
+    console.log('PUT taskId:', { taskId }); // Debug taskId
+
     if (isNaN(taskId)) {
       return NextResponse.json({ error: 'Invalid task ID' }, { status: 400 });
     }
@@ -71,17 +78,17 @@ export async function PUT(request, { params }) {
     }
 
     const task = await prisma.task.update({
-      where: {
-        id: taskId,
-        userId,
-      },
+      where: { id: taskId, userId },
       data: parsedBody.data,
     });
 
     return NextResponse.json(task);
   } catch (error) {
     console.error('PUT /api/tasks/[id] error:', error);
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+    return NextResponse.json(
+      { error: error.message || 'Failed to update task' },
+      { status: 500 }
+    );
   }
 }
 
@@ -91,22 +98,23 @@ export async function DELETE(request, { params }) {
     if (!userId) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
-
-    const taskId = parseInt(params.id);
+     
+     const { id } = await params;
+    const taskId = parseInt(id);
     if (isNaN(taskId)) {
       return NextResponse.json({ error: 'Invalid task ID' }, { status: 400 });
     }
 
     await prisma.task.delete({
-      where: {
-        id: taskId,
-        userId,
-      },
+      where: { id: taskId, userId },
     });
 
     return NextResponse.json({ message: 'Task deleted' });
   } catch (error) {
     console.error('DELETE /api/tasks/[id] error:', error);
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+    return NextResponse.json(
+      { error: error.message || 'Failed to delete task' },
+      { status: 500 }
+    );
   }
 }
