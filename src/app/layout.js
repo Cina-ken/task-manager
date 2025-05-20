@@ -8,6 +8,10 @@ import Footer from '@/components/Footer';
 export const metadata = {
   title: 'Task Manager',
   description: 'A professional task management app',
+  icons: {
+  icon: '/favicon.ico',
+},
+
 };
 
 export default function RootLayout({ children }) {
